@@ -26,7 +26,7 @@ app.use('/purchase', require('./routes/purchaseRoutes'));
 app.use('/premium', require('./routes/premiumRoutes'));
 app.use('/password', require('./routes/forgotpasswordRoutes'));
 
-console.log("app.js");
+// console.log("app.js");
 const accessLogStream = fs.createWriteStream(path.join(__dirname, 'access.log'), { flags: 'a' });
 app.use(helmet());
 app.use(morgan('combined', { stream: accessLogStream }));
