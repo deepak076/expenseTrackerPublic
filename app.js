@@ -1,10 +1,11 @@
 const express = require('express');
+const mongoose = require('mongoose');
 require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
-const mysql = require('mysql2');
-const sequelize = require('./util/database');
+// const mysql = require('mysql2');
+// const sequelize = require('./util/database');
 const app = express();
 const port = 3000;
 const helmet = require('helmet');
@@ -31,13 +32,11 @@ const accessLogStream = fs.createWriteStream(path.join(__dirname, 'access.log'),
 app.use(helmet());
 app.use(morgan('combined', { stream: accessLogStream }));
 
-sequelize.sync({ force: false }) 
+mongoose.connect(process.env.DB_CONNECTION_STRING, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => {
-    console.log('Database synced');
-    app.listen(port, () => {
-      console.log(`Server is running on port ${port}`);
-    });
+    console.log('Connected to MongoDB');
+    app.listen(3000);
   })
-  .catch((error) => {
-    console.error('Error syncing database:', error);
+  .catch(err => {
+    console.error('Error connecting to MongoDB:', err);
   });

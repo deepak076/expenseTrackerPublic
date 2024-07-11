@@ -1,4 +1,3 @@
-// C:\Users\DEEPSROCK\Desktop\node-js\Expense tracker\public\dashboard.js
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         // Dynamically load Razorpay script
@@ -131,9 +130,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const expenseElement = document.createElement('div');
                 expenseElement.className = 'expense-item';
                 expenseElement.innerHTML = `
-        <span> &#8226; Amount: ${expense.amount}, Description: ${expense.description}, Category: ${expense.category}</span>
-        <button class="delete-button" data-expense-id="${expense.id}">Delete</button>
-        `;
+                    <span> &#8226; Amount: ${expense.amount}, Description: ${expense.description}, Category: ${expense.category}</span>
+                    <button class="delete-button" data-expense-id="${expense._id}">Delete</button>
+                `;
                 expensesList.appendChild(expenseElement);
             });
 
@@ -166,7 +165,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Fetch and display expenses for the current page
         fetchAndDisplayExpenses(currentPage);
     });
-
 
     if (expensesList) {
         // Add an event listener for the expense form submission
@@ -204,7 +202,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else {
         console.error("Element with ID 'expenses-list' not found.");
     }
-
 
     async function handleDeleteExpense(event) {
         const expenseId = event.target.getAttribute('data-expense-id');

@@ -1,60 +1,95 @@
-// C:\Users\DEEPSROCK\Desktop\node-js\Expense tracker\models\userModel.js
-const db = require('../db');
-const odermodel = require('../models/order');
+// models\userModel.js
+const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
+const Expense = require('./expenseModel');
 
+// Define the User schema
+const userSchema = new Schema({
+  name: {
+    type: String,
+    required: true
+  },
+  email: {
+    type: String,
+    required: true,
+    unique: true
+  },
+  password: {
+    type: String,
+    required: true
+  },
+  isPremiumUser: {
+    type: Boolean,
+    default: false // Set the default value to false
+  },
+  totalExpenses: {
+    type: Number,
+    default: 0
+  }
+}, {
+  timestamps: true // Enable automatic timestamps
+});
+
+// Define the association
+userSchema.virtual('forgotPasswords', {
+  ref: 'ForgotPassword',
+  localField: '_id',
+  foreignField: 'userId'
+});
+
+// Create the User model
+const User = mongoose.model('User', userSchema);
+
+// Functions related to User model
 const createUser = async (name, email, password) => {
-  const insertUserQuery = 'INSERT INTO users (name, email, password) VALUES (?, ?, ?)';
   try {
-    const [result] = await db.promise().query(insertUserQuery, [name, email, password]);
-    return { userId: result.insertId };
+    const newUser = new User({ name, email, password });
+    const savedUser = await newUser.save();
+    return { userId: savedUser._id };
   } catch (err) {
     throw err;
   }
 };
 
+// Get a user by email
 const getUserByEmail = async (email) => {
-  const getUserQuery = 'SELECT * FROM users WHERE email = ?';
   try {
-    const [results] = await db.promise().query(getUserQuery, [email]);
-    return results.length > 0 ? results[0] : null;
+    const user = await User.findOne({ email });
+    return user ? user : null;
   } catch (err) {
     throw err;
   }
 };
 
+// Get a user by ID
 const getUserById = async (userId) => {
-  const getUserQuery = 'SELECT * FROM users WHERE id = ?';
   try {
-    const [results] = await db.promise().query(getUserQuery, [userId]);
-    return results.length > 0 ? results[0] : null;
+    const user = await User.findById(userId);
+    return user ? user : null;
   } catch (err) {
     throw err;
   }
 };
 
+// Update premium status of a user
 const updatePremiumStatus = async (userId) => {
   try {
-      const query = 'UPDATE `users` SET ispremiumuser = 1 WHERE id = ?';
-
-      // Assuming db is your mysql2 connection
-      const [rows, fields] = await db.promise().query(query, [userId]);
-
-      // You might want to check if the update was successful by inspecting the `rows` variable
-      console.log('Rows affected:', rows.affectedRows);
+    const result = await User.findByIdAndUpdate(userId, { isPremiumUser: true }, { new: true });
+    if (!result) {
+      throw new Error('User not found');
+    }
+    console.log('Updated User:', result);
+    return result;
   } catch (error) {
-      throw new Error(`Error updating order: ${error.message}`);
+    throw new Error(`Error updating user: ${error.message}`);
   }
 };
 
+// Get the premium leaderboard
 const getPremiumLeaderboard = async () => {
   try {
-    const leaderboardData = await db.promise().query(`
-      SELECT id, name, email, totalExpenses
-      FROM users
-      ORDER BY totalExpenses DESC
-    `);
-
-    return leaderboardData[0];
+    const leaderboardData = await User.find().sort({ totalExpenses: -1 }).select('id name email totalExpenses');
+    return leaderboardData;
   } catch (error) {
     throw error;
   }
@@ -63,22 +98,15 @@ const getPremiumLeaderboard = async () => {
 // Function to update totalExpenses for a user
 const updateTotalExpenses = async (userId) => {
   try {
-    const updateQuery = `
-      UPDATE users
-      SET totalExpenses = (
-        SELECT SUM(amount)
-        FROM expenses
-        WHERE user_id = ?
-      )
-      WHERE id = ?
-    `;
-
-    // Update the totalExpenses
-    await db.promise().query(updateQuery, [userId, userId]);
+    const userExpenses = await Expense.aggregate([
+      { $match: { user_id: mongoose.Types.ObjectId(userId) } },
+      { $group: { _id: null, total: { $sum: '$amount' } } }
+    ]);
+    const totalExpenses = userExpenses[0]?.total || 0;
+    await User.findByIdAndUpdate(userId, { totalExpenses });
   } catch (error) {
     throw error;
   }
 };
 
-module.exports = { createUser, getUserByEmail, getUserById, updatePremiumStatus, getPremiumLeaderboard, updateTotalExpenses };
-
+module.exports = { User, createUser, getUserByEmail, getUserById, updatePremiumStatus, getPremiumLeaderboard, updateTotalExpenses };

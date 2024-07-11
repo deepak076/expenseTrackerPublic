@@ -1,7 +1,8 @@
-const uuid = require('uuid');
+// C:\Users\DEEPSROCK\Desktop\node-js\expenseTrackerPublic - Copy mongodb\controllers\resetpasswordController.jsconst uuid = require('uuid');
+
 const bcrypt = require('bcrypt');
 const SibApiV3Sdk = require('sib-api-v3-sdk');
-const User = require('../models/users');
+const User = require('../models/userModel');
 const Forgotpassword = require('../models/forgotpassword');
 const fs = require('fs');
 const path = require('path');
@@ -17,19 +18,33 @@ const forgotpassword = async (req, res) => {
         console.log("Entering forgot password");
         const { email } = req.body;
         console.log("email", email);
-        const user = await User.findOne({ where: { email } });
+
+        // Find the user by email
+        const user = await User.findOne({ email });
         console.log("user", user);
 
         if (!user) {
             throw new Error('User does not exist');
         }
 
+        // Generate a unique ID for the reset link
         const id = uuid.v4();
         console.log("id", id);
+
+        // Create a new ForgotPassword entry
+        const forgotPasswordEntry = new ForgotPassword({
+            userId: user._id,
+            isActive: true, // Assuming it's active when created
+        });
+        
+        // Save the ForgotPassword entry
+        await forgotPasswordEntry.save();
+
+        // Construct the reset link
         const resetLink = `http://localhost:3000/password/resetpassword/${encodeURIComponent(id)}`;
         console.log("resetlink", resetLink);
-        await user.createForgotpassword({ id, active: true });
 
+        // Send the password reset email
         const sendSmtpEmail = {
             to: [{ email, name: user.name }],
             subject: 'Password Reset',
@@ -51,12 +66,14 @@ const forgotpassword = async (req, res) => {
             sender: { email: 'deepak19csu076@ncuindia.edu', name: 'Deepak' }, // Specify your sender details here
         };
 
+        // Send the email using Sendinblue API
         const data = await apiInstance.sendTransacEmail(sendSmtpEmail);
         console.log('API called successfully. Returned data:', data);
 
+        // Respond with success message and reset link
         return res.status(200).json({
             message: 'Reset password email sent successfully',
-            resetLink, // Include reset link in the response
+            resetLink,
             success: true,
         });
     } catch (error) {
@@ -67,6 +84,7 @@ const forgotpassword = async (req, res) => {
         });
     }
 };
+
 
 const validateResetLink = async (req, res) => {
     try {

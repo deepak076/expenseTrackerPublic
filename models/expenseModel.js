@@ -1,103 +1,108 @@
-// C:\Users\DEEPSROCK\Desktop\node-js\Expense tracker\models\expenseModel.js
-const db = require('../db');
+// // C:\Users\DEEPSROCK\Desktop\node-js\Expense tracker\models\expenseModel.js
 
-const createExpense = (amount, description, category, user_id) => {
-  // Insert a new expense into the database
-  const insertExpenseQuery = 'INSERT INTO expenses (amount, description, category, user_id) VALUES (?, ?, ?, ?)';
-  return new Promise((resolve, reject) => {
-    db.query(insertExpenseQuery, [amount, description, category, user_id], (err, result) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(result.insertId);
-      }
-    });
-  });
+const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
+
+// Define the Expense schema
+const expenseSchema = new Schema({
+  amount: {
+    type: Number,
+    required: true
+  },
+  description: {
+    type: String,
+    required: true
+  },
+  category: {
+    type: String,
+    required: true
+  },
+  user_id: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  }
+}, {
+  timestamps: true // Enable automatic timestamps
+});
+
+// Create the Expense model
+const Expense = mongoose.model('Expense', expenseSchema);
+
+// Create a new expense
+const createExpense = async (amount, description, category, user_id) => {
+  try {
+    const newExpense = new Expense({ amount, description, category, user_id });
+    const savedExpense = await newExpense.save();
+    return savedExpense._id;
+  } catch (err) {
+    throw err;
+  }
 };
 
+// Get all expenses for a user with pagination
 const getAllExpenses = async (userId, offset, pageSize) => {
   try {
-    const query = `
-      SELECT e.id, e.amount, e.description, e.category
-      FROM expense.expenses e
-      JOIN expense.users u ON e.user_id = u.id
-      WHERE u.id = ?
-      LIMIT ?, ?;
-    `;
-
-    const [expenses] = await db.promise().query(query, [userId, offset, pageSize]);
+    const expenses = await Expense.find({ user_id: userId })
+      .skip(offset)
+      .limit(pageSize)
+      .select('id amount description category');
     return expenses;
   } catch (error) {
     throw new Error(`Error fetching expenses: ${error.message}`);
   }
 };
 
-const deleteExpense = (expenseId) => {
-  console.log("delete model");
-  // const expenseId = req.params.expenseId;
-  console.log("expense id ", expenseId);
-
-  // SQL query to delete the expense
-  const deleteQuery = 'DELETE FROM expenses WHERE id = ?';
-
-  db.query(deleteQuery, [expenseId], (err, results) => {
-    if (err) {
-      console.error('Error:', err);
-      return (err);
-    } else {
-
-      return (results);
-    }
-  });
+// Delete an expense by ID
+const deleteExpense = async (expenseId) => {
+  try {
+    const result = await Expense.findByIdAndDelete(expenseId);
+    return result;
+  } catch (error) {
+    throw new Error(`Error deleting expense: ${error.message}`);
+  }
 };
 
+// Get paginated expenses for a user
 const getPaginatedExpenses = async (userId, offset, pageSize) => {
   try {
-    const query = `
-      SELECT e.id, e.amount, e.description, e.category
-      FROM expense.expenses e
-      JOIN expense.users u ON e.user_id = u.id
-      WHERE u.id = ?
-      LIMIT ?, ?;
-    `;
-
-    const [expenses] = await db.promise().query(query, [userId, offset, pageSize]);
+    const expenses = await Expense.find({ user_id: userId })
+      .skip(offset)
+      .limit(pageSize)
+      .select('id amount description category');
     return expenses;
   } catch (error) {
     throw new Error(`Error fetching paginated expenses: ${error.message}`);
   }
 };
 
+// Get total expenses count for a user
 const getTotalExpensesCount = async (userId) => {
   try {
-    const query = `
-      SELECT COUNT(*) as totalExpenses
-      FROM expense.expenses e
-      JOIN expense.users u ON e.user_id = u.id
-      WHERE u.id = ?;
-    `;
-
-    const [result] = await db.promise().query(query, [userId]);
-    return result[0].totalExpenses;
+    const count = await Expense.countDocuments({ user_id: userId });
+    return count;
   } catch (error) {
     throw new Error(`Error fetching total expenses count: ${error.message}`);
   }
 };
 
-const getAllExpensesToDownlaod = async (userId) => {
+// Get all expenses for a user to download
+const getAllExpensesToDownload = async (userId) => {
   try {
-    const query = `
-      SELECT e.id, e.amount, e.description, e.category
-      FROM expense.expenses e
-      JOIN expense.users u ON e.user_id = u.id
-      WHERE u.id = ?;
-    `;
-
-    const [expenses] = await db.promise().query(query, [userId]);
+    const expenses = await Expense.find({ user_id: userId })
+      .select('id amount description category');
     return expenses;
   } catch (error) {
     throw new Error(`Error fetching all expenses: ${error.message}`);
   }
 };
 
-module.exports = { createExpense, getAllExpenses, deleteExpense, getPaginatedExpenses, getTotalExpensesCount, getAllExpensesToDownlaod };
+module.exports = {
+  createExpense,
+  getAllExpenses,
+  deleteExpense,
+  getPaginatedExpenses,
+  getTotalExpensesCount,
+  getAllExpensesToDownload
+};
+

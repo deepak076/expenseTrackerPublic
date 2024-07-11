@@ -1,26 +1,26 @@
-// models/forgotpassword.js
+// models\forgotpassword.js
+const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
 
-const Sequelize = require('sequelize');
-const sequelize = require('../util/database');
-
-const Forgotpassword = sequelize.define('forgotpassword', {
-    id: {
-        type: Sequelize.UUID,
-        allowNull: false,
-        primaryKey: true
-    },
-    isActive: {
-        type: Sequelize.BOOLEAN,
-        defaultValue: true,
-    },
-    expiresby: Sequelize.DATE,
-    userId: {
-        type: Sequelize.INTEGER,
-        references: {
-            model: 'users',
-            key: 'id'
-        }
-    }
+// Define the ForgotPassword schema
+const forgotPasswordSchema = new Schema({
+  userId: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  isActive: {
+    type: Boolean,
+    default: true
+  },
+  expiresBy: {
+    type: Date
+  }
+}, {
+  timestamps: true // Enable automatic timestamps (createdAt, updatedAt)
 });
 
-module.exports = Forgotpassword;
+// Create the ForgotPassword model
+const ForgotPassword = mongoose.model('ForgotPassword', forgotPasswordSchema);
+
+module.exports = ForgotPassword;

@@ -1,30 +1,25 @@
-// C:\Users\DEEPSROCK\Desktop\node-js\Expense tracker\middleware\auth.js
 const jwt = require('jsonwebtoken');
-const db = require('../db');
+const { User } = require('../models/userModel');
 
-const authenticate = (req, res, next) => {
+const authenticate = async (req, res, next) => {
   try {
     const token = req.header('Authorization');
-    const user = jwt.verify(token, 'secretkey');
+    if (!token) {
+      throw new Error('No token provided');
+    }
 
-    // Use your MySQL connection to fetch the user along with isPremiumUser, name, email
-    db.query('SELECT id, name, email, isPremiumUser FROM users WHERE id = ?', [user.userId], (err, results) => {
-      if (err) {
-        throw new Error(err);
-      }
+    const decoded = jwt.verify(token, 'secretkey');
+    const user = await User.findById(decoded.userId).select('id name email isPremiumUser');
 
-      const userFromDb = results[0];
+    if (!user) {
+      throw new Error('User not found');
+    }
 
-      if (userFromDb) {
-        req.user = userFromDb;
-        next();
-      } else {
-        throw new Error('User not found');
-      }
-    });
+    req.user = user;
+    next();
   } catch (err) {
     console.log(err);
-    return res.status(401).json({ success: false });
+    return res.status(401).json({ success: false, error: err.message });
   }
 };
 

@@ -1,33 +1,35 @@
 // C:\Users\DEEPSROCK\Desktop\node-js\Expense tracker\models\downloadFiles.js
-const { DataTypes } = require('sequelize');
-const sequelize = require('../util/database');
+const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
 
-const DownloadedFile = sequelize.define('downloaded_files', {
-    id: {
-        type: DataTypes.INTEGER,
-        primaryKey: true,
-        autoIncrement: true,
-    },
+// Define the DownloadedFile schema
+const downloadedFileSchema = new Schema({
     user_id: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+        required: true,
     },
     file_url: {
-        type: DataTypes.STRING(255),
-        allowNull: false,
+        type: String,
+        required: true,
     },
     download_date: {
-        type: DataTypes.DATE,
-        defaultValue: DataTypes.NOW,
+        type: Date,
+        default: Date.now,
     },
 });
 
+// Create the DownloadedFile model
+const DownloadedFile = mongoose.model('DownloadedFile', downloadedFileSchema);
+
+// Function to save a downloaded file
 const saveDownloadedFile = async (userId, fileUrl) => {
     try {
-        const downloadedFile = await DownloadedFile.create({
+        const downloadedFile = new DownloadedFile({
             user_id: userId,
             file_url: fileUrl,
         });
+        await downloadedFile.save();
         return downloadedFile;
     } catch (error) {
         console.error('Error saving downloaded file:', error);
@@ -36,3 +38,42 @@ const saveDownloadedFile = async (userId, fileUrl) => {
 };
 
 module.exports = { DownloadedFile, saveDownloadedFile };
+
+
+// const { DataTypes } = require('sequelize');
+// const sequelize = require('../util/database');
+
+// const DownloadedFile = sequelize.define('downloaded_files', {
+//     id: {
+//         type: DataTypes.INTEGER,
+//         primaryKey: true,
+//         autoIncrement: true,
+//     },
+//     user_id: {
+//         type: DataTypes.INTEGER,
+//         allowNull: false,
+//     },
+//     file_url: {
+//         type: DataTypes.STRING(255),
+//         allowNull: false,
+//     },
+//     download_date: {
+//         type: DataTypes.DATE,
+//         defaultValue: DataTypes.NOW,
+//     },
+// });
+
+// const saveDownloadedFile = async (userId, fileUrl) => {
+//     try {
+//         const downloadedFile = await DownloadedFile.create({
+//             user_id: userId,
+//             file_url: fileUrl,
+//         });
+//         return downloadedFile;
+//     } catch (error) {
+//         console.error('Error saving downloaded file:', error);
+//         throw error;
+//     }
+// };
+
+// module.exports = { DownloadedFile, saveDownloadedFile };

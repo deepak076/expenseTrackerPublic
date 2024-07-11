@@ -1,28 +1,31 @@
 const bcrypt = require('bcrypt');
-const userModel = require('../models/userModel');
+const { User } = require('../models/userModel');
 const jwt = require('jsonwebtoken');
 
+// Function to generate an access token
+function generateAccessToken(id, name) {
+  return jwt.sign({ userId: id, name: name }, 'secretkey');
+}
+
+// Signup function
 const signup = async (req, res) => {
   const { name, email, password } = req.body;
 
   try {
     // Check if the email is already registered
-    const existingUser = await userModel.getUserByEmail(email);
+    const existingUser = await User.findOne({ email });
 
     if (existingUser) {
       res.status(400).json({ success: false, error: 'Email already in use.' });
     } else {
       // Hash the password
-      bcrypt.hash(password, 10, async (hashErr, hashedPassword) => {
-        if (hashErr) {
-          console.error('Password hashing error:', hashErr);
-          res.status(500).json({ success: false, error: 'Password hashing error' });
-        } else {
-          // Create a new user in the database with the hashed password
-          const userId = await userModel.createUser(name, email, hashedPassword);
-          res.status(201).json({ success: true, message: 'User registered successfully', userId });
-        }
-      });
+      const hashedPassword = await bcrypt.hash(password, 10);
+      
+      // Create a new user in the database with the hashed password
+      const newUser = new User({ name, email, password: hashedPassword });
+      const savedUser = await newUser.save();
+      
+      res.status(201).json({ success: true, message: 'User registered successfully', userId: savedUser._id });
     }
   } catch (err) {
     console.error('Error:', err);
@@ -30,30 +33,22 @@ const signup = async (req, res) => {
   }
 };
 
-function generateAccessToken(id, name){
-  return jwt.sign({userId : id, name: name}, 'secretkey')
-}
-
+// Login function
 const login = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const user = await userModel.getUserByEmail(email);
+    const user = await User.findOne({ email });
 
     if (user) {
-      const hashedPassword = user.password;
+      const match = await bcrypt.compare(password, user.password);
 
-      bcrypt.compare(password, hashedPassword, (compareErr, match) => {
-        if (compareErr) {
-          console.error('Password comparison error:', compareErr);
-          res.status(500).json({ success: false, error: 'Password comparison error' });
-        } else if (match) {
-          const token = generateAccessToken(user.id, user.name); // Corrected here
-          res.status(200).json({ success: true, message: 'Login successful.', token });
-        } else {
-          res.status(401).json({ success: false, error: 'Login failed.' });
-        }
-      });
+      if (match) {
+        const token = generateAccessToken(user._id, user.name);
+        res.status(200).json({ success: true, message: 'Login successful.', token });
+      } else {
+        res.status(401).json({ success: false, error: 'Login failed.' });
+      }
     } else {
       res.status(404).json({ success: false, error: 'User not found.' });
     }
@@ -62,6 +57,5 @@ const login = async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 };
-
 
 module.exports = { signup, login };

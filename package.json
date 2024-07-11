@@ -5,7 +5,7 @@
   "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "cross-env NODE_ENV=production TOKEN_SECRET=secretkey RAZORPAY_KEY_ID=KdBI4Fh1nUAZGeSKRbeL0DQg RAZORPAY_KEY_SECRET=KdBI4Fh1nUAZGeSKRbeL0DQg SENDINBLUE_API_KEY=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 s3_BUCKET_NAME=expensetracker2508 s3_IAM_USER_KEY=AKIAV6BICH4W5TPQWJUK s3_IAM_USER_SECRET=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 node app.js",
+    "start": "node app.js",
     "start:dev": "nodemon app.js"
   },
   "repository": {
@@ -29,6 +29,7 @@
     "express": "^4.18.2",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.5.0",
     "morgan": "^1.10.0",
     "mysql": "^2.18.1",
     "mysql2": "^3.6.2",
